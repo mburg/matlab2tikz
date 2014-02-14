@@ -98,6 +98,8 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
 %   check for updates of matlab2tikz. (default: true)
 %
+%   MATLAB2TIKZ('noSize',BOOL,...) (default: false)
+%
 %   Example
 %      x = -pi:pi/10:pi;
 %      y = tan(sin(x)) - sin(tan(x));
