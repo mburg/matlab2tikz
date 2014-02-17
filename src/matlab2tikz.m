@@ -221,6 +221,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
+  ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
 
   % Maximum chunk length.
   % TeX parses files line by line with a buffer of size buf_size. If the
