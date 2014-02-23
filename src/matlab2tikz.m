@@ -222,6 +222,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
   ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'colorlist', [], @isCellOrChar);
 
   % Maximum chunk length.
   % TeX parses files line by line with a buffer of size buf_size. If the
@@ -371,6 +372,30 @@ function matlab2tikz(varargin)
   saveToFile(m2t, fid, fileWasOpen);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  % replace colors with colors of colorlist
+  if ~isempty(ipp.Results.colorlist)
+      if ischar(ipp.Results.colorlist) % if only on color is given
+          colorlist = {ipp.Results.colorlist};
+      else
+          colorlist = ipp.Results.colorlist;
+      end
+      % find all colors in file ('color=...')
+      S = fileread(filename);
+      colorstrings = regexp(S,'color=([a-z!0-9]+)','tokens');
+      colors_unique = unique(cat(1,colorstrings{:}),'stable');
+      % check for same number of colors
+      if length(colors_unique) ~= length(colorlist)
+          warning('Colors can''t be replaced by colorlist. Number of colors doesn''t match');
+      else % replace colors
+          for I_color = 1:length(colorlist)
+             S = strrep(S,['color=' colors_unique{I_color}],['color=' colorlist{I_color}]);
+          end
+          fid = fopen(filename,'w+');
+          fwrite(fid,S,'*char');
+          fclose(fid);
+      end
+  end
+  
 end
 % =========================================================================
 function l = filenameValidation(x, p)
