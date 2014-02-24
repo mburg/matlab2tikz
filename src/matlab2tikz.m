@@ -59,6 +59,7 @@ function matlab2tikz(varargin)
 %
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
+%   If 'cycle list' or 'cycle list name' is given, all addplot arguments will be emtpy. 
 %
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
@@ -97,6 +98,7 @@ function matlab2tikz(varargin)
 %
 %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
 %   check for updates of matlab2tikz. (default: true)
+%
 %
 %   Example
 %      x = -pi:pi/10:pi;
