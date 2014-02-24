@@ -102,6 +102,9 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('noSize',BOOL,...) determines whether to specify the size of the
 %   plot in the generated file. (default: false)
 %
+%   MATLAB2TIKZ('colorlist',CHAR or CELLCHAR,...) exchange colors with those given 
+%   in colorlist. (default: [])
+%
 %   Example
 %      x = -pi:pi/10:pi;
 %      y = tan(sin(x)) - sin(tan(x));
