@@ -59,6 +59,7 @@ function matlab2tikz(varargin)
 %
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
+%   If 'cycle list' or 'cycle list name' is given, all addplot arguments will be emtpy. 
 %
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
@@ -1421,7 +1422,16 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
           else
               opts = join(m2t, drawOptions, ',');
           end
-
+          % empty opts if cycle list from tikz is used
+          if ischar(m2t.cmdOpts.Results.extraAxisOptions)
+              if ~isempty(strfind(m2t.cmdOpts.Results.extraAxisOptions,'cycle list'))
+                  opts = '';
+              end
+          elseif iscellstr(m2t.cmdOpts.Results.extraAxisOptions)
+              if any(~cellfun(@isempty,strfind(m2t.cmdOpts.Results.extraAxisOptions,'cycle list')))
+                  opts = '';
+              end
+          end
           [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
           str = [str, Part];
       end
@@ -1463,8 +1473,13 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
       tabOpts = 'row sep=crcr';
   end
   [m2t, table] = makeTable(m2t, repmat({''}, size(data,2)), data);
-  str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
+  if ~isempty(opts)
+      str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
                 opts, str, tabOpts, table);
+  else % no empty []
+     str = sprintf('\\addplot\n %s table[%s]{%s};\n',...
+                 str, tabOpts, table); 
+  end
 end
 % =========================================================================
 function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xLim, yLim)
