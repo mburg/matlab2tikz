@@ -1,4 +1,4 @@
-function filename = matlab2tikz(varargin)
+function varargout = matlab2tikz(varargin)
 %MATLAB2TIKZ    Save figure in native LaTeX (TikZ/Pgfplots).
 %   MATLAB2TIKZ() saves the current figure as LaTeX file.
 %   MATLAB2TIKZ comes with several options that can be combined at will.
@@ -398,6 +398,12 @@ function filename = matlab2tikz(varargin)
           fwrite(fid,S,'*char');
           fclose(fid);
       end
+  end
+  
+  
+  % output of filename only if wanted
+  if nargout>0
+      varargout{1} = filename;
   end
   
 end
