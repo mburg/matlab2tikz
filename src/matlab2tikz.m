@@ -1906,6 +1906,7 @@ function [m2t, str] = drawImage(m2t, handle)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   cdata = get(handle, 'CData');
+  alphaData = get(handle, 'AlphaData'); % transparency
 
   m = size(cdata, 1);
   n = size(cdata, 2);
@@ -1945,7 +1946,7 @@ function [m2t, str] = drawImage(m2t, handle)
       end
 
       % write the image
-      imwriteWrapperPNG(colorData, m2t.currentHandles.colormap, pngFileName);
+      imwriteWrapperPNG(colorData, m2t.currentHandles.colormap, pngFileName, alphaData);
       % ------------------------------------------------------------------------
       % dimensions of a pixel in axes units
       if n==1
@@ -4782,21 +4783,40 @@ function printAll(m2t, env, fid)
     end
 end
 % =========================================================================
-function imwriteWrapperPNG(colorData, cmap, fileName)
+function imwriteWrapperPNG(colorData, cmap, fileName, alphaData)
     % Write an indexed or a truecolor image
+    
+    if nargin<4 % alphaData is not given
+        alphaData = zeros(size(colorData,1),size(colorData,2));
+    end
+    
     % Don't use ismatrix(), cf. <https://github.com/nschloe/matlab2tikz/issues/143>.
     if (ndims(colorData) == 2)
+        % for indexed images only transparency (1/0)
+        if ~all(all(ismember(alphaData,[0 1])))
+            alphaData = zeros(size(colorData,1),size(colorData,2));
+        end
+        alphaData = logical(alphaData);
+        % replace color index
+        colorData(~alphaData) = size(cmap,1) + 1;
+        cmap = [cmap; 0 0 0];
+        transparent_value = ones(size(cmap,1),1);
+        transparent_value(end) = 0;
+        
         % According to imwrite's documentation there is support for 1-bit,
         % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
         % When having more colors, a truecolor image must be generated and
         % used instead.
         if size(cmap, 1) <= 256
-            imwrite(colorData, cmap, fileName, 'png');
+            imwrite(colorData, cmap, fileName, 'png','Transparency',transparent_value);
         else
-            imwrite(ind2rgb(colorData, cmap), fileName, 'png');
+            imwrite(ind2rgb(colorData, cmap), fileName, 'png','Transparency',transparent_value);
         end
     else
-        imwrite(colorData, fileName, 'png');
+        if islogical(alphaData)
+            alphaData = double(alphaData);
+        end
+        imwrite(colorData, fileName, 'png','Alpha',alphaData);
     end
 end
 % =========================================================================
