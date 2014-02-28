@@ -1,4 +1,4 @@
-function matlab2tikz(varargin)
+function filename = matlab2tikz(varargin)
 %MATLAB2TIKZ    Save figure in native LaTeX (TikZ/Pgfplots).
 %   MATLAB2TIKZ() saves the current figure as LaTeX file.
 %   MATLAB2TIKZ comes with several options that can be combined at will.
@@ -52,6 +52,7 @@ function matlab2tikz(varargin)
 %
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
+%   If 'cycle list' or 'cycle list name' is given, all addplot arguments will be emtpy. 
 %
 %   MATLAB2TIKZ('extraColors', {{'name',[R G B]}, ...} , ...) adds
 %   user-defined named RGB-color definitions to the TikZ output.
@@ -59,7 +60,6 @@ function matlab2tikz(varargin)
 %
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
-%   If 'cycle list' or 'cycle list name' is given, all addplot arguments will be emtpy. 
 %
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
