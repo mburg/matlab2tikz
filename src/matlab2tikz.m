@@ -35,14 +35,14 @@ function varargout = matlab2tikz(varargin)
 %   MATLAB2TIKZ('externalData',BOOL,...) stores all data points in external
 %   files as tab separated values (TSV files). (default: false)
 %
-%   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the given
-%   path to follow the external data files and PNG files.  If LaTeX source and
-%   the external files will reside in the same directory,
-%   this can be set to '.'. (default: [])
+%   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the
+%   given path to follow the external data files and PNG files.  If LaTeX
+%   source and the external files will reside in the same directory, this can
+%   be set to '.'. (default: [])
 %
-%   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be any
-%   LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.
-%   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
+%   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be
+%   any LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.  If
+%   unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
@@ -77,9 +77,10 @@ function varargout = matlab2tikz(varargin)
 %   MATLAB2TIKZ('parseStringsAsMath',BOOL,...) determines whether to use TeX's
 %   math mode for more characters (e.g. operators and figures). (default: false)
 %
-%   MATLAB2TIKZ('showHiddenStrings',BOOL,...) determines whether to show strings
-%   whose were deliberately hidden. This is usually unnecessary, but can come
-%   in handy for unusual plot types (e.g., polar plots). (default: false)
+%   MATLAB2TIKZ('showHiddenStrings',BOOL,...) determines whether to show
+%   strings whose were deliberately hidden. This is usually unnecessary, but
+%   can come in handy for unusual plot types (e.g., polar plots). (default:
+%   false)
 %
 %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
 %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
@@ -619,7 +620,6 @@ end
 % =========================================================================
 function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
   % Draw all children of a graphics object (if they need to be drawn).
-
   children = get(handle, 'Children');
 
   % prepare cell array of pgfEnvironments
@@ -1157,8 +1157,8 @@ function m2t = handleColorbar(m2t, handle)
       end
     end
     if parentFound
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
+      m2t.axesContainers{k0}.options = ...
+        addToOptions(m2t.axesContainers{k0}.options, ...
                     matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
       % Append cell string.
       m2t.axesContainers{k0}.options = cat(1,...
@@ -1574,7 +1574,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
       % if not, don't add anything in case of default marker size
       % and effectively take Pgfplots' default.
       if m2t.cmdOpts.Results.strict || ~isDefault
-         drawOptions{end+1} = sprintf('mark size=%.1fpt', tikzMarkerSize);
+          drawOptions{end+1} = sprintf('mark size=%.1fpt', tikzMarkerSize);
       end
 
       markOptions = cell(0);
@@ -1596,11 +1596,15 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
                            markOptions, ~strcmp(markerFaceColor,'none'));
       if ~strcmp(markerFaceColor,'none')
           [m2t, xcolor] = getColor(m2t, h, markerFaceColor, 'patch');
-          markOptions{end+1} = sprintf('fill=%s', xcolor);
+          if ~isempty(xcolor)
+              markOptions{end+1} = sprintf('fill=%s', xcolor);
+          end
       end
       if ~strcmp(markerEdgeColor,'none') && ~strcmp(markerEdgeColor,'auto')
           [m2t, xcolor] = getColor(m2t, h, markerEdgeColor, 'patch');
-          markOptions{end+1} = sprintf('draw=%s', xcolor);
+          if ~isempty(xcolor)
+              markOptions{end+1} = sprintf('draw=%s', xcolor);
+          end
       end
 
       % add it all to drawOptions
@@ -1726,15 +1730,15 @@ function [tikzMarker, markOptions] = ...
 
               case 'v'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=180'];
+                  markOptions{end+1} = 'rotate=180';
 
               case '<'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=90'];
+                  markOptions{end+1} = 'rotate=90';
 
               case '>'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=270'];
+                  markOptions{end+1} = 'rotate=270';
 
               case {'p','pentagram'}
                   tikzMarker = 'star';
@@ -1754,10 +1758,8 @@ function [tikzMarker, markOptions] = ...
 end
 % =========================================================================
 function [m2t, str] = drawPatch(m2t, handle)
-  % Draws a 'patch' graphics object (as found in contourf plots, for
-  % example).
+  % Draws a 'patch' graphics object (as found in contourf plots, for example).
   %
-
   str = [];
 
   if ~isVisible(handle)
@@ -1767,131 +1769,156 @@ function [m2t, str] = drawPatch(m2t, handle)
   % This is for a quirky workaround for stacked bar plots.
   m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
-  % MATLAB's patch elements are matrices in which each column represents a
-  % a distinct graphical object. Usually there is only one column, but
-  % there may be more (-->hist plots, although they are now handled
-  % within the barplot framework).
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
-
-  if isempty(zData)
-      columnNames = {'x', 'y'};
-      data = [xData(:), yData(:)];
-      plotType = 'addplot';
-  else
-      columnNames = {'x', 'y', 'z'};
-      data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
-      plotType = 'addplot3';
-      m2t.currentAxesContain3dData = true;
-  end
-  % -----------------------------------------------------------------------
-  % gather the draw options
-  % Make sure that legends are shown in area mode.
-  drawOptions = {'area legend'};
+  % MATLAB's patch elements are matrices in which each column represents a a
+  % distinct graphical object. Usually there is only one column, but there may
+  % be more (-->hist plots, although they are now handled within the barplot
+  % framework).
+  XData = get(handle, 'XData');
+  YData = get(handle, 'YData');
+  ZData = get(handle, 'ZData');
 
   % see if individual color values are present
-  cData = get(handle, 'CData');
+  CData = get(handle, 'CData');
 
-  % Use the '\\' as a row separator to make sure that the generated figures
-  % work in subplot environments.
-  tableOptions = {'row sep=crcr'};
-
-  % Add the proper color map even if the map data isn't directly used in the
-  % plot to make sure that we get correct color bars.
-  if length(cData) == length(xData)
-      % Add the color map.
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+  % If the data points are given in three vectors, we are dealing with one
+  % single patch. If they are all matrices, then the columns of matrix
+  % represent one patch each.
+  if min(size(XData)) == 1
+      % Make sure vectors are column vectors.
+      XData = XData(:);
+      YData = YData(:);
+      ZData = ZData(:);
+      CData = CData(:);
   end
-  % If full color data is provided, we can use point meta color data.
-  % For some reason, this only works for filled contours in Pgfplots, so fall
-  % back to explicit color specifications for line plots.
-  if length(cData) == length(xData) ...
-     && ~strcmp(get(handle, 'FaceColor'), 'none')
-      data = [data, cData(:)];
-      drawOptions{end+1} = 'patch';
-      columnNames{end+1} = 'c';
-      tableOptions{end+1} = 'point meta=\thisrow{c}';
-  else
-      % Probably one color only, so things we're probably only dealing with
-      % one patch here.
-      % line width
-      lineStyle = get(handle, 'LineStyle');
-      lineWidth = get(handle, 'LineWidth');
-      lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-      drawOptions = [drawOptions, lineOptions];
 
-      % Find out color values.
-      % fill color
-      faceColor = get(handle, 'FaceColor');
-      if ~strcmp(faceColor, 'none')
-          [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-          drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-          xFaceAlpha = get(handle, 'FaceAlpha');
-          if abs(xFaceAlpha-1.0) > m2t.tol
-              drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
-          end
-      end
+  numPatches = size(XData, 2);
 
-      % draw color
-      edgeColor = get(handle, 'EdgeColor');
-      lineStyle = get(handle, 'LineStyle');
-      if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
-          drawOptions{end+1} = 'draw=none';
+  for k = 1:numPatches
+      xData = XData(:, k);
+      yData = YData(:, k);
+
+      if isempty(ZData)
+          columnNames = {'x', 'y'};
+          data = [xData(:), yData(:)];
+          plotType = 'addplot';
       else
-          [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-          if isempty(xEdgeColor)
-              % getColor() wasn't able to return a color. This is because cdata
-              % was an actual vector with different values in it, meaning that
-              % the color changes along the edge. This is the case, for
-              % example, with waterfall() plots.
-              % An actual color maps is needed here.
-              %
-              drawOptions{end+1} = 'mesh'; % or surf
-              m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
-              % Append upper and lower limit of the color mapping.
-              clim = caxis;
-              m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                            'point meta min', sprintf(m2t.ff, clim(1)));
-              m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                            'point meta max', sprintf(m2t.ff, clim(2)));
-              % Note:
-              % Pgfplots can't currently use FaceColor and colormapped edge
-              % color in one go. The option 'surf' makes sure that colormapped
-              % edge colors are used. Face colors are not displayed.
+          zData = ZData(:, k);
+          columnNames = {'x', 'y', 'z'};
+          data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
+          plotType = 'addplot3';
+          m2t.currentAxesContain3dData = true;
+      end
+
+      cData = CData(:, k);
+      % -----------------------------------------------------------------------
+      % gather the draw options
+      % Make sure that legends are shown in area mode.
+      drawOptions = {'area legend'};
+
+      % Use the '\\' as a row separator to make sure that the generated figures
+      % work in subplot environments.
+      tableOptions = {'row sep=crcr'};
+
+      [m2t, markerOptions] = getMarkerOptions(m2t, handle);
+      drawOptions = [drawOptions, markerOptions];
+
+      % Add the proper color map even if the map data isn't directly used in
+      % the plot to make sure that we get correct color bars.
+      if length(cData) == length(xData)
+          % Add the color map.
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                        matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+      end
+      % If full color data is provided, we can use point meta color data.
+      % For some reason, this only works for filled contours in Pgfplots, so
+      % fall back to explicit color specifications for line plots.
+      if length(cData) == length(xData) ...
+         && ~strcmp(get(handle, 'FaceColor'), 'none')
+          data = [data, cData(:)];
+          drawOptions{end+1} = 'patch';
+          columnNames{end+1} = 'c';
+          tableOptions{end+1} = 'point meta=\thisrow{c}';
+      else
+          % Probably one color only, so things we're probably only dealing with
+          % one patch here.
+          % line width
+          lineStyle = get(handle, 'LineStyle');
+          lineWidth = get(handle, 'LineWidth');
+          lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+          drawOptions = [drawOptions, lineOptions];
+
+          % Find out color values.
+          % fill color
+          faceColor = get(handle, 'FaceColor');
+          if ~strcmp(faceColor, 'none')
+              [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+              drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
+              xFaceAlpha = get(handle, 'FaceAlpha');
+              if abs(xFaceAlpha - 1.0) > m2t.tol
+                  drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
+              end
+          end
+
+          % draw color
+          edgeColor = get(handle, 'EdgeColor');
+          lineStyle = get(handle, 'LineStyle');
+          if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+              drawOptions{end+1} = 'draw=none';
           else
-              % getColor() returned a reasonable color value.
-              drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+              [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
+              if isempty(xEdgeColor)
+                  % getColor() wasn't able to return a color. This is because
+                  % cdata was an actual vector with different values in it,
+                  % meaning that the color changes along the edge. This is the
+                  % case, for example, with waterfall() plots.
+                  % An actual color maps is needed here.
+                  %
+                  drawOptions{end+1} = 'mesh'; % or surf
+                  m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                                matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+                  % Append upper and lower limit of the color mapping.
+                  clim = caxis;
+                  m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                                'point meta min', sprintf(m2t.ff, clim(1)));
+                  m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                                'point meta max', sprintf(m2t.ff, clim(2)));
+                  % Note:
+                  % Pgfplots can't currently use FaceColor and colormapped edge
+                  % color in one go. The option 'surf' makes sure that
+                  % colormapped edge colors are used. Face colors are not
+                  % displayed.
+              else
+                  % getColor() returned a reasonable color value.
+                  drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+              end
           end
       end
-  end
 
-  if ~m2t.currentHandleHasLegend
-      % No legend entry found. Don't include plot in legend.
-      drawOptions{end+1} = 'forget plot';
-  end
+      if ~m2t.currentHandleHasLegend
+          % No legend entry found. Don't include plot in legend.
+          drawOptions{end+1} = 'forget plot';
+      end
 
-  drawOpts = join(m2t, drawOptions, ',');
-  % -----------------------------------------------------------------------
-  if   any(~isfinite(xData(:))) ...
-    || any(~isfinite(yData(:))) ...
-    || any(~isfinite(zData(:)))
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    'unbounded coords', 'jump');
-  end
-  % Plot the actual data.
-  [m2t, table] = makeTable(m2t, columnNames, data);
+      drawOpts = join(m2t, drawOptions, ',');
+      % -----------------------------------------------------------------------
+      if any(~isfinite(data(:)))
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                        'unbounded coords', 'jump');
+      end
+      % Plot the actual data.
+      [m2t, table] = makeTable(m2t, columnNames, data);
 
-  str = sprintf('%s\n\\%s[%s]\n table[%s] {%s};\n\n',...
-                str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % Some patches need to be closed by adding a "--cycle"; some don't.
+      % TODO find out when to insert --cycle
+      str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s};\n\n',...
+                    str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  end
 end
 % =========================================================================
 function [m2t, str] = drawImage(m2t, handle)
@@ -1924,8 +1951,10 @@ function [m2t, str] = drawImage(m2t, handle)
       % draw a png image
       % Take the TikZ file base name and change the extension .png.
       [pathstr, name] = fileparts(m2t.tikzFileName);
-      pngFileName = fullfile(pathstr, [name '-' num2str(m2t.imageAsPngNo) '.png']);
-      pngReferencePath = fullfile(m2t.relativeDataPath, [name '-' num2str(m2t.imageAsPngNo) '.png']);
+      pngFileName = fullfile(pathstr, ...
+                             [name '-' num2str(m2t.imageAsPngNo) '.png']);
+      pngReferencePath = fullfile(m2t.relativeDataPath, ...
+                                  [name '-' num2str(m2t.imageAsPngNo) '.png']);
       pngReferencePath = TeXpath(pngReferencePath);
 
       % Get color indices for indexed color images and truecolor values
@@ -1978,12 +2007,13 @@ function [m2t, str] = drawImage(m2t, handle)
                 'locations of the master TeX file and the included TikZ file.\n'], ...
                 pngFileName, pngReferencePath);
   else
-      % ------------------------------------------------------------------------
+      % -----------------------------------------------------------------------
       % draw the thing
       userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
                         'Make sure to set ''imagesAsPng'' to true.']);
 
-      % Generate uniformly distributed X, Y, although xData and yData may be non-uniform.
+      % Generate uniformly distributed X, Y, although xData and yData may be
+      % non-uniform.
       % This is MATLAB(R) behaviour.
       switch length(xData)
           case 2 % only the limits given; common for generic image plots
@@ -2035,10 +2065,9 @@ end
 % =========================================================================
 function [m2t, str] = drawHggroup(m2t, h)
 
-  % Octave doesn't have the handle() function, so there's no way to
-  % determine the nature of the plot anymore at this point.
-  % Set to 'unknown' to force fallback handling. This produces something
-  % for bar plots, for example.
+  % Octave doesn't have the handle() function, so there's no way to determine
+  % the nature of the plot anymore at this point.  Set to 'unknown' to force
+  % fallback handling. This produces something for bar plots, for example.
   try
       cl = class(handle(h));
   catch %#ok
@@ -2222,22 +2251,21 @@ end
 function [m2t, str] = drawText(m2t, handle)
   % Adding text node anywhere in the axex environment.
   % Not that, in Pgfplots, long texts get cut off at the axes. This is
-  % Different from the default MATLAB behavior. To fix this, one could
-  % use /pgfplots/after end axis/.code.
+  % Different from the default MATLAB behavior. To fix this, one could use
+  % /pgfplots/after end axis/.code.
 
   str = [];
 
-  % There may be some text objects floating around a MATLAB figure which
-  % are handled by other subfunctions (labels etc.) or don't need to be
-  % handled at all.
+  % There may be some text objects floating around a MATLAB figure which are
+  % handled by other subfunctions (labels etc.) or don't need to be handled at
+  % all.
   % The HandleVisibility says something about whether the text handle is
-  % visible as a data structure or not. Typically, a handle is hidden
-  % if the graphics aren't supposed to be altered, e.g., axis labels.
-  % Most of those entities are captured by matlab2tikz one way or
-  % another, but sometimes they are not. This is the case, for
-  % example, with polar plots and the axis descriptions therein.
-  % Also, Matlab treats text objects with a NaN in the position as
-  % invisible.
+  % visible as a data structure or not. Typically, a handle is hidden if the
+  % graphics aren't supposed to be altered, e.g., axis labels.  Most of those
+  % entities are captured by matlab2tikz one way or another, but sometimes they
+  % are not. This is the case, for example, with polar plots and the axis
+  % descriptions therein.  Also, Matlab treats text objects with a NaN in the
+  % position as invisible.
   if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ...
      || strcmp(get(handle, 'Visible'), 'off') ...
      || (strcmp(get(handle, 'HandleVisibility'), 'off') && ~m2t.cmdOpts.Results.showHiddenStrings)
@@ -2458,7 +2486,9 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   markerEdgeColor = get(h, 'MarkerEdgeColor');
   hasFaceColor = ~strcmp(markerFaceColor,'none');
   hasEdgeColor = ~strcmp(markerEdgeColor,'none');
-  [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, [], hasFaceColor);
+  markOptions = cell(0);
+  [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
+                                              markOptions, hasFaceColor);
 
   if length(sData) == 1
       constMarkerkSize = true; % constant marker size
@@ -2491,7 +2521,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       end
       if constMarkerkSize % if constant marker size, do nothing special
           drawOptions = { 'only marks', ...
-                          ['mark=' tikzMarker] };
+                          ['mark=' tikzMarker], ...
+                          ['mark options={', join(m2t, markOptions, ','), '}'] };
           if hasFaceColor && hasEdgeColor
               drawOptions{end+1} = { ['draw=' ecolor], ...
                                      ['fill=' xcolor] };
@@ -2499,7 +2530,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
               drawOptions{end+1} = ['color=' xcolor];
           end
       else % if changing marker size but same color on all marks
-          markerOptions = { ['mark=', tikzMarker] };
+          markerOptions = { ['mark=', tikzMarker], ...
+                            ['mark options={', join(m2t, markOptions, ','), '}'] };
           if hasEdgeColor
               markerOptions{end+1} = ['draw=' ecolor];
           else
@@ -2512,7 +2544,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
           drawOptions = { 'scatter', ...
                           'only marks', ...
                           ['color=' xcolor], ...
-                          ['mark=' tikzMarker] };
+                          ['mark=' tikzMarker], ...
+                          ['mark options={', join(m2t, markOptions, ','), '}'] };
           if ~hasFaceColor
               drawOptions{end+1} = { ['scatter/use mapped color=' xcolor] };
           else
@@ -2525,7 +2558,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 %                        'scatter rgb' ...
                     };
   else
-      markerOptions = { ['mark=', tikzMarker] };
+      markerOptions = { ['mark=', tikzMarker], ...
+                        ['mark options={', join(m2t, markOptions, ','), '}'] };
       if hasEdgeColor && hasFaceColor
           [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
           markerOptions{end+1} = ['draw=' ecolor];
@@ -2611,6 +2645,15 @@ function [m2t, str] = drawBarseries(m2t, h)
       m2t.barplotTotalNumber = [];
       m2t.barShifts = [];
       m2t.addedAxisOption = false;
+  end
+
+  % Add 'log origin = infty' if BaseValue differs from zero (log origin=0 is
+  % the default behaviour since Pgfplots v1.5).
+  baseValue = get(h, 'BaseValue');
+  if baseValue ~= 0.0
+      m2t.axesContainers{end}.options = ...
+          addToOptions(m2t.axesContainers{end}.options, ...
+                       'log origin', 'infty');
   end
 
   str = [];
@@ -2815,7 +2858,7 @@ function [m2t, str] = drawBarseries(m2t, h)
 
   drawOpts = join(m2t, drawOptions, ',');
   [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-  str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
+  str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%%\n%s};\n', ...
                 str, drawOpts, table);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3939,13 +3982,13 @@ function [m2t, table] = makeTable(m2t, varargin)
     end
     nRows = min(nRows);
 
-    FORMAT = repmat({m2t.ff}, nColumns);
+    FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
-    if ~all(cellfun(@isempty, variables))
-        header = {join(m2t, variables, COLSEP)};
-    else
+    if all(cellfun(@isempty, variables))
         header = {};
+    else
+        header = {join(m2t, variables, COLSEP)};
     end
 
     table = cell(nRows,1);
@@ -3961,9 +4004,7 @@ function [m2t, table] = makeTable(m2t, varargin)
     table = lower(table); % convert NaN and Inf to lower case for TikZ
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
-    if ~m2t.cmdOpts.Results.externalData
-        table = sprintf('\n%s', table); % add newline for clarity
-    else
+    if m2t.cmdOpts.Results.externalData
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
 
@@ -3980,6 +4021,9 @@ function [m2t, table] = makeTable(m2t, varargin)
 
         % put the filename in the TikZ output
         table = TeXpath(relativeFilename);
+    else
+        % output data literally
+        table = sprintf('%s', table);
     end
 end
 % =========================================================================
@@ -5395,9 +5439,6 @@ function checkDeprecatedEnvironment(m2t, minimalVersions)
              '  later versions of %s.\n', ...
              '  This script may still be able to handle your plots, but if you\n', ...
              '  hit a bug, please consider upgrading your environment first.\n', ...
-             '\n', ...
-             '  Every time you submit a bug report with a deprecated environment...\n', ...
-             '  God kills a kitten.\n', ...
              '\n', ...
              '================================================================================'];
           warning('matlab2tikz:deprecatedEnvironment',warningMessage, ...
