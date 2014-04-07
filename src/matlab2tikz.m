@@ -386,14 +386,16 @@ function varargout = matlab2tikz(varargin)
       end
       % find all colors in file ('color=...')
       S = fileread(filename);
-      colorstrings = regexp(S,'color=([a-z!0-9]+)','tokens');
-      colors_unique = unique(cat(1,colorstrings{:}),'stable');
+      colorstrings = regexp(S,'(color|fill)=([a-z!0-9]+)','tokens');
+      colorstrings = cellfun(@(x) x{2} , colorstrings, 'UniformOutput',false);
+      colors_unique = unique(colorstrings,'stable');
       % check for same number of colors
       if length(colors_unique) ~= length(colorlist)
           warning('Colors can''t be replaced by colorlist. Number of colors doesn''t match');
       else % replace colors
           for I_color = 1:length(colorlist)
              S = strrep(S,['color=' colors_unique{I_color}],['color=' colorlist{I_color}]);
+             S = strrep(S,['fill=' colors_unique{I_color}],['fill=' colorlist{I_color}]);
           end
           fid = fopen(filename,'w+');
           fwrite(fid,S,'*char');
@@ -1965,6 +1967,10 @@ function [m2t, str] = drawImage(m2t, handle)
       else
           colorData = cdata;
       end
+      
+      if isscalar(alphaData)
+          alphaData = alphaData*ones(m,n);
+      end
 
       % flip the image if reverse
       if m2t.xAxisReversed
@@ -1972,6 +1978,8 @@ function [m2t, str] = drawImage(m2t, handle)
       end
       if m2t.yAxisReversed
           colorData = colorData(m:-1:1, :, :);
+      else
+          alphaData = alphaData(m:-1:1,:);
       end
 
       % write the image
