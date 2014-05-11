@@ -4862,7 +4862,9 @@ function imwriteWrapperPNG(colorData, cmap, fileName, alphaData)
         if size(cmap, 1) <= 256
             imwrite(colorData, cmap, fileName, 'png','Transparency',transparent_value);
         else
-            imwrite(ind2rgb(colorData, cmap), fileName, 'png','Transparency',transparent_value);
+            imwrite(ind2rgb(colorData, cmap), fileName, 'png');
+%             imwrite(ind2rgb(colorData, cmap), fileName, 'png','Transparency',transparent_value);
+            
         end
     else
         if islogical(alphaData)
